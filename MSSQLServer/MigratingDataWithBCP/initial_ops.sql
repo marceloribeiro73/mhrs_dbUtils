@@ -1,3 +1,6 @@
+USE [DbExemple]
+
+
 DECLARE @maxRowsPerFile AS bigint = 16485762
 
 -- Source parameters
