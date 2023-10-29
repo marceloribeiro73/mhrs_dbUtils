@@ -64,7 +64,7 @@ BEGIN
             PRINT @msg_error + '@p_db_schema_table_souce is a invalid object'
         END CATCH
     END
-     IF @p_db_schema_table_destination IS NULL
+    IF @p_db_schema_table_destination IS NULL
     BEGIN
         SET @cod_error = 1
         PRINT @msg_error + 'Parameter @p_db_schema_table_destination is null'
