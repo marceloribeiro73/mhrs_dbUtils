@@ -8,11 +8,81 @@ CREATE OR ALTER PROCEDURE p_exporting_operation
 
 AS
 BEGIN
-    --Check if xp_cmdshell is enable, if isn't, anything is executed
-    DECLARE @is_xp_cmdshell_enable BIT = (SELECT CAST(value_in_use as BIT) FROM sys.configurations sc WHERE sc.name = 'xp_cmdshell')
-    IF @is_xp_cmdshell_enable = 0
+    -- add sources for parameters 
+    DECLARE @cod_error BIT = 0 -- 0 is non error
+    DECLARE @msg_error NVARCHAR(64) = 'ERROR: '
+   
+    --source if xp_cmdshell is enable, if isn't, anything is executed
+    IF (SELECT CAST(value_in_use as INT) FROM sys.configurations sc WHERE sc.name = 'xp_cmdshell') = 0
     BEGIN
-        PRINT 'xp_cmdShell is disabled . BCP operations aren''t executed in this condition.' -- Room from improvement is know
+        SET @cod_error = 1
+        PRINT @msg_error + 'xp_cmdShell is disabled . BCP operations aren''t executed in this condition.'
+    END
+    IF @p_qtd_operations_per_exec IS NULL or @p_qtd_operations_per_exec <= 0
+    BEGIN
+        SET @cod_error = 1
+        PRINT @msg_error + 'Parameter @p_qtd_operations_per_exec is null or is under or equal a zero'
+    END
+    IF @p_delay_between_operations IS NULL
+    BEGIN
+        SET @cod_error = 1
+        PRINT @msg_error + 'Parameter @p_delay_between_operations is null'
+    END
+    IF @p_user_name_source IS NULL
+    BEGIN
+        SET @cod_error =1
+        PRINT @msg_error + 'Parameter @p_user_name_source is null'
+    END
+    ELSE IF (SELECT principal_id FROM sys.server_principals WHERE [name] = @p_user_name_source) IS NULL
+    BEGIN
+        SET @cod_error = 1
+        PRINT @msg_error + 'Login not exists'
+    END
+    ELSE IF (SELECT is_disabled FROM sys.server_principals WHERE [name] = @p_user_name_source) = 1
+    BEGIN
+        SET @cod_error = 1
+        PRINT @msg_error + 'Login is disabled'
+    END
+    IF @p_passwd_source IS NULL
+    BEGIN
+        SET @cod_error = 1
+        PRINT @mss_error + 'Parameter @p_passwd_source is null'
+    END
+    IF @p_db_schema_table_souce IS NULL
+    BEGIN
+        SET @cod_error = 1
+        PRINT @msg_error + 'Parameter @p_db_schema_table_souce is null'
+    END
+    ELSE
+    BEGIN
+        BEGIN TRY
+            DECLARE @validate_cmd NVARCHAR(512) = 'SELECT TOP 1 * FROM ' + @p_db_schema_table_souce
+            EXEC (@validate_cmd)
+        END TRY
+        BEGIN CATCH
+            SET @cod_error = 1
+            PRINT @msg_error + '@p_db_schema_table_souce is a invalid object'
+        END CATCH
+    END
+    IF @p_db_schema_table_destination IS NULL
+    BEGIN
+        SET @cod_error = 1
+        PRINT @msg_error + 'Parameter @p_db_schema_table_destination is null'
+    END
+    ELSE
+    BEGIN
+        BEGIN TRY
+            DECLARE @validate_cmd NVARCHAR(512) = 'SELECT TOP 1 * FROM ' + @p_db_schema_table_destination
+            EXEC (@validate_cmd)
+        END TRY
+        BEGIN CATCH
+            SET @cod_error = 1
+            PRINT @msg_error + '@p_db_schema_table_destination is a invalid object'
+        END CATCH
+    END
+    IF @cod_error > 0
+    BEGIN
+        PRINT 'There are errors on pre-validation, please give a look on previous messages '-- Room from improvement is know
     END
     ELSE
     BEGIN
