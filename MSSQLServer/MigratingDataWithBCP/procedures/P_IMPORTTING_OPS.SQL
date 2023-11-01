@@ -27,7 +27,7 @@ BEGIN
         SET @cod_error = 1
         PRINT @msg_error + 'Parameter @p_delay_between_operations is null'
     END
-    IF @p_user_name_source IS NULL
+    IF @p_user_name_destination IS NULL
     BEGIN
         SET @cod_error =1
         PRINT @msg_error + 'Parameter @p_user_name_destination is null'
@@ -45,7 +45,7 @@ BEGIN
     IF @p_use_passwd_destination IS NULL
     BEGIN
         SET @cod_error = 1
-        PRINT @mss_error + 'Parameter @p_use_passwd_destination is null'
+        PRINT @msg_error + 'Parameter @p_use_passwd_destination is null'
     END
     IF @p_db_schema_table_souce IS NULL
     BEGIN
@@ -71,8 +71,8 @@ BEGIN
     ELSE
     BEGIN
         BEGIN TRY
-            DECLARE @validate_cmd NVARCHAR(512) = 'SELECT TOP 1 * FROM ' + @p_db_schema_table_destination
-            EXEC (@validate_cmd)
+            DECLARE @validate_cmd_d NVARCHAR(512) = 'SELECT TOP 1 * FROM ' + @p_db_schema_table_destination
+            EXEC (@validate_cmd_d)
         END TRY
         BEGIN CATCH
             SET @cod_error = 1
@@ -85,9 +85,9 @@ BEGIN
     END
     ELSE
     BEGIN
-        DECLARE @cmd_bcp_exec_imp NVARCHAR(MAX), @id_bcp_cmd_imp INT, @start_time_exec_imp DATETIME, @end_time_exec DATETIME, @xp_cmdshell_result_imp INT
+        DECLARE @cmd_bcp_exec_imp NVARCHAR(1024), @id_bcp_cmd_imp INT, @start_time_exec_imp DATETIME, @end_time_exec DATETIME, @xp_cmdshell_result_imp INT
         DECLARE cur_import_ops CURSOR FAST_FORWARD FOR
-            WITH exeported 
+            WITH exported 
             AS
             (
                 SELECT
@@ -118,12 +118,12 @@ BEGIN
         BEGIN
             PRINT 'Executing the command: ' + @cmd_bcp_exec_imp
             SET @cmd_bcp_exec_imp = CONCAT(@cmd_bcp_exec_imp, ' -E -U ', @p_user_name_destination, ' -P ', @p_use_passwd_destination)
-            SET @start_time_exec = GETDATE()
+            SET @start_time_exec_imp = GETDATE()
             EXEC @xp_cmdshell_result_imp = xp_cmdshell @cmd_bcp_exec_imp
             IF @xp_cmdshell_result_imp = 0
             BEGIN
                 SET @end_time_exec = GETDATE()
-                UPDATE tdmc SET tdmc.execStartDate = @start_time_exec, tdmc.execEndDate =@end_time_exec, tdmc.statusLastExecIsError = @xp_cmdshell_result_imp
+                UPDATE tdmc SET tdmc.execStartDate = @start_time_exec_imp, tdmc.execEndDate =@end_time_exec, tdmc.statusLastExecIsError = @xp_cmdshell_result_imp
                 FROM dbo.tmp_data_migration_control tdmc
                 WHERE tdmc.idCommand = @id_bcp_cmd_imp
                 PRINT 'Execution succeed'
