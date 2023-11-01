@@ -46,7 +46,7 @@ BEGIN
     IF @p_passwd_source IS NULL
     BEGIN
         SET @cod_error = 1
-        PRINT @mss_error + 'Parameter @p_passwd_source is null'
+        PRINT @msg_error + 'Parameter @p_passwd_source is null'
     END
     IF @p_db_schema_table_souce IS NULL
     BEGIN
@@ -72,8 +72,8 @@ BEGIN
     ELSE
     BEGIN
         BEGIN TRY
-            DECLARE @validate_cmd NVARCHAR(512) = 'SELECT TOP 1 * FROM ' + @p_db_schema_table_destination
-            EXEC (@validate_cmd)
+            DECLARE @validate_cmd_d NVARCHAR(512) = 'SELECT TOP 1 * FROM ' + @p_db_schema_table_destination
+            EXEC (@validate_cmd_d)
         END TRY
         BEGIN CATCH
             SET @cod_error = 1
@@ -86,7 +86,7 @@ BEGIN
     END
     ELSE
     BEGIN
-        DECLARE @cmd_bpc_exec NVARCHAR(MAX), @id_bpc_cmd INT, @start_time_exec DATETIME, @end_time_exec DATETIME, @xp_cmdShell_result INT
+        DECLARE @cmd_bpc_exec VARCHAR(1024), @id_bpc_cmd INT, @start_time_exec DATETIME, @end_time_exec DATETIME, @xp_cmdShell_result INT
         DECLARE cur_export_ops CURSOR FAST_FORWARD FOR
             SELECT TOP (@p_qtd_operations_per_exec)
                 tdmc.command
@@ -108,7 +108,7 @@ BEGIN
             IF @xp_cmdShell_result = 0
             BEGIN
                 SET @end_time_exec = GETDATE()
-                UPDATE tdmc SET tdmc.execStartDate = @start_time_exec, tdmc.execEndDate = @end_time_exec, a.statusLastExecIsError= @xp_cmdShell_result
+                UPDATE tdmc SET tdmc.execStartDate = @start_time_exec, tdmc.execEndDate = @end_time_exec, tdmc.statusLastExecIsError= @xp_cmdShell_result
                 FROM dbo.tmp_data_migration_control tdmc
                 WHERE tdmc.idCommand = @id_bpc_cmd
                 PRINT 'Execution succeed'
